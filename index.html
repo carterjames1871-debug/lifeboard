@@ -647,7 +647,10 @@
         <div class="card">
           <h2>Grocery list <span class="count" id="grocCount"></span></h2>
           <div class="row" style="margin-bottom:10px">
-            <input type="text" id="grocInput" class="grow" placeholder="Add item…" maxlength="80">
+            <span class="grow" style="position:relative">
+              <input type="text" id="grocInput" placeholder="Add item — start typing to autofill…" maxlength="80" autocomplete="off" style="width:100%">
+              <div id="grocResults" class="fsearch" hidden></div>
+            </span>
             <button class="primary" id="grocAdd">Add</button>
           </div>
           <div id="grocList"></div>
@@ -2072,6 +2075,7 @@ $("foodSearch").addEventListener("keydown", e => {
 });
 document.addEventListener("click", e => {
   if (!e.target.closest("#foodSearch") && !e.target.closest("#foodResults")) { const b = $("foodResults"); if (b) b.hidden = true; }
+  if (!e.target.closest("#grocInput") && !e.target.closest("#grocResults")) { const b = $("grocResults"); if (b) b.hidden = true; }
 });
 $("pickQty").addEventListener("input", updatePickMacros);
 $("pickCancel").addEventListener("click", () => { pickedFood = null; $("foodPick").hidden = true; });
@@ -2093,14 +2097,54 @@ $("saveGoals").addEventListener("click", () => {
   save(); renderFood(); toast("Targets saved");
 });
 $("foodDate").addEventListener("change", renderFood);
-$("grocAdd").addEventListener("click", () => {
-  const name = $("grocInput").value.trim(); if (!name) return;
-  const m = matchFood(name);
-  S.grocery.push({ id: uid(), name, checked: false, status: null, foodId: m ? m.i : null });
-  save(); $("grocInput").value = ""; renderFood();
-  if (m) toast(`Added — matched "${m.n}" for macros`);
+let grocIdx = -1;
+function addGrocery(name, foodId) {
+  S.grocery.push({ id: uid(), name, checked: false, status: null, foodId: foodId != null ? foodId : null });
+  save();
+  $("grocInput").value = ""; $("grocResults").hidden = true; grocIdx = -1;
+  renderFood();
+}
+function renderGrocSearch() {
+  const q = $("grocInput").value;
+  const res = searchFoods(q, 6);
+  const box = $("grocResults");
+  if (!res.length) { box.hidden = true; box.innerHTML = ""; return; }
+  box.hidden = false;
+  box.innerHTML = res.map((f, i) => `<button data-gi="${f.i}" class="${i === grocIdx ? "sel" : ""}">
+    <div class="fname">${esc(f.n)}</div>
+    <div class="fmeta">${esc(f.s)} · ${f.kcal} cal · ${f.p}p ${f.c}c ${f.f}f</div></button>`).join("") +
+    `<button data-gfree="1" style="color:var(--muted)"><div class="fname">＋ Add “${esc(q.trim())}” as written</div>
+      <div class="fmeta">no macros attached</div></button>`;
+  box.querySelectorAll("[data-gi]").forEach(b => b.addEventListener("click", () => {
+    const f = foodById(+b.dataset.gi);
+    addGrocery(f.n, f.i);
+    toast(`Added ${f.n} — ${f.kcal} cal per ${f.s}`);
+  }));
+  const free = box.querySelector("[data-gfree]");
+  if (free) free.addEventListener("click", () => { const n = $("grocInput").value.trim(); if (n) addGrocery(n, null); });
+}
+$("grocInput").addEventListener("input", () => { grocIdx = -1; renderGrocSearch(); });
+$("grocInput").addEventListener("keydown", e => {
+  const res = searchFoods($("grocInput").value, 6);
+  if (e.key === "ArrowDown") { e.preventDefault(); grocIdx = Math.min(grocIdx + 1, res.length - 1); renderGrocSearch(); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); grocIdx = Math.max(grocIdx - 1, -1); renderGrocSearch(); }
+  else if (e.key === "Escape") { $("grocResults").hidden = true; grocIdx = -1; }
+  else if (e.key === "Enter") { e.preventDefault(); $("grocAdd").click(); }
 });
-$("grocInput").addEventListener("keydown", e => { if (e.key === "Enter") $("grocAdd").click(); });
+$("grocAdd").addEventListener("click", () => {
+  const raw = $("grocInput").value.trim(); if (!raw) return;
+  const res = searchFoods(raw, 6);
+  // a highlighted suggestion wins; otherwise fall back to a fuzzy match on the typed text
+  if (grocIdx >= 0 && res[grocIdx]) {
+    const f = res[grocIdx];
+    addGrocery(f.n, f.i);
+    toast(`Added ${f.n} — ${f.kcal} cal per ${f.s}`);
+    return;
+  }
+  const m = matchFood(raw);
+  addGrocery(raw, m ? m.i : null);
+  toast(m ? `Added — matched "${m.n}" for macros` : "Added");
+});
 
 /* ============================================================
    ACTIVITY
