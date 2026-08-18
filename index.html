@@ -1943,7 +1943,7 @@ $("icsFile").addEventListener("change", e => {
    Requires the hosted version (a real https:// address) + a
    one-time OAuth Client ID — see the setup guide.
    ============================================================ */
-let gToken = null, gTokenClient = null, gSyncTimer = null;
+let gToken = null, gTokenClient = null, gSyncTimer = null, gSilentMode = false;
 const gcalReady = () => S.gcal && S.gcal.clientId;
 const isHosted = () => location.protocol === "https:" || location.protocol === "http:";
 
@@ -1982,10 +1982,17 @@ function gcalAuth(silent, cb) {
           if (resp && resp.access_token) { gToken = resp.access_token; cb && cb(); }
           else gcalStatus("Connection didn't complete — try again");
         },
-        error_callback: () => gcalStatus(silent ? "Session expired — hit Sync to reconnect" : "Connect was cancelled or blocked (allow pop-ups)")
+        error_callback: err => {
+          const t = (err && err.type) || "";
+          if (gSilentMode) gcalStatus("Session expired — hit Sync to reconnect");
+          else if (t === "popup_failed_to_open") gcalStatus("Google's window was blocked — allow pop-ups for this site, then Connect again");
+          else if (t === "popup_closed") gcalStatus("Sign-in window closed before finishing — click Connect and complete all the Google steps (Advanced → Go to LifeBoard → Allow)");
+          else gcalStatus("Google refused the sign-in. If you picked a school/work account, its admin may block unverified apps — try a personal Gmail.");
+        }
       });
     }
-    try { gTokenClient.requestAccessToken({ prompt: silent ? "" : "" }); }
+    gSilentMode = silent;
+    try { gTokenClient.requestAccessToken({ prompt: silent ? "" : "consent" }); }
     catch (e) { gcalStatus("Couldn't start Google sign-in"); }
   });
 }
