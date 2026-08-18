@@ -355,6 +355,39 @@
   .target-bar > div { height: 100%; background: var(--accent); border-radius: 99px; }
   .target-bar > div.hit { background: var(--good); }
 
+  /* ---------- Macros ---------- */
+  .macro-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+  .macro-top { display: flex; align-items: baseline; gap: 6px; margin-bottom: 5px; }
+  .macro-top b { font-size: 20px; letter-spacing: -0.3px; }
+  .macro-top span { font-size: 12px; color: var(--muted); }
+  .over .macro-top b { color: var(--danger); }
+
+  /* ---------- Food search ---------- */
+  .fsearch { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 40;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.14); max-height: 300px; overflow-y: auto; }
+  .fsearch button { display: block; width: 100%; text-align: left; background: none; border: none;
+    font: inherit; cursor: pointer; padding: 8px 12px; color: var(--ink); border-bottom: 1px solid var(--grid); }
+  .fsearch button:last-child { border-bottom: none; }
+  .fsearch button:hover, .fsearch button.sel { background: var(--accent-soft); }
+  .fsearch .fname { font-weight: 500; font-size: 13.5px; }
+  .fsearch .fmeta { font-size: 11.5px; color: var(--muted); }
+  .meal-head { font-size: 11.5px; font-weight: 700; letter-spacing: .5px; color: var(--muted); margin: 10px 0 2px; }
+
+  /* ---------- Goals ---------- */
+  .goal-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px 18px; box-shadow: var(--shadow); margin-bottom: 12px; border-left: 4px solid var(--accent); }
+  .goal-card.soon { border-left-color: var(--danger); }
+  .goal-card.warn { border-left-color: #eda100; }
+  .goal-card.past { border-left-color: var(--muted); opacity: .75; }
+  .goal-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .goal-title { font-weight: 600; font-size: 15.5px; flex: 1; min-width: 140px; }
+  .countdown { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; font-variant-numeric: tabular-nums; }
+  .countdown small { font-size: 12px; font-weight: 600; color: var(--muted); margin-left: 3px; }
+  .goal-meta { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+  .goal-why { font-size: 13px; color: var(--ink-2); margin-top: 6px; font-style: italic; }
+  .goal-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+
   /* ---------- Undo toast ---------- */
   #undoToast { pointer-events: auto; display: flex; gap: 14px; align-items: center; }
   #undoToast button { background: none; border: none; color: #8ec2ff; font: inherit; font-weight: 700; cursor: pointer; padding: 0; }
@@ -374,6 +407,7 @@
     <button class="nav-btn" data-view="activity"><span class="dot" style="background:var(--c-activity)"></span>Activity</button>
     <button class="nav-btn" data-view="faith"><span class="dot" style="background:var(--c-faith)"></span>Faith</button>
     <button class="nav-btn" data-view="hustles"><span class="dot" style="background:var(--c-hustle)"></span>Side Hustles</button>
+    <button class="nav-btn" data-view="goals"><span class="dot" style="background:var(--c-hustle)"></span>Goals</button>
     <div id="navAreas" style="display:contents"></div>
     <button class="nav-btn" data-view="custom" data-area=""><span class="dot" style="background:var(--c-custom)"></span>＋ New area</button>
     <button class="nav-btn" data-view="review"><span class="dot" style="background:var(--c-general)"></span>Week Review</button>
@@ -535,12 +569,80 @@
 
     <!-- ============ FOOD ============ -->
     <section class="view" id="view-food">
-      <div class="page-head"><h1>Food</h1><span class="sub">Buy it → eat it. Don't let it turn.</span></div>
-      <div class="tiles">
-        <div class="tile"><div class="t-label">EATEN THIS WEEK</div><div class="t-value" id="fdEaten">0</div><div class="t-hint">items finished</div></div>
-        <div class="tile"><div class="t-label">WASTED THIS WEEK</div><div class="t-value" id="fdWasted">0</div><div class="t-hint" id="fdWastedHint">went bad</div></div>
-        <div class="tile"><div class="t-label">USE-IT RATE</div><div class="t-value" id="fdRate">—</div><div class="t-hint">eaten ÷ finished</div></div>
+      <div class="page-head"><h1>Food</h1><span class="sub" id="foodDateLabel"></span></div>
+
+      <div class="card">
+        <h2>Today's intake <span class="count" id="calRemain"></span></h2>
+        <div class="macro-grid">
+          <div class="macro">
+            <div class="macro-top"><b id="mKcal">0</b><span id="mKcalGoal">/ 2200 cal</span></div>
+            <div class="pbar"><div id="bKcal" style="width:0%"></div></div>
+          </div>
+          <div class="macro">
+            <div class="macro-top"><b id="mP">0g</b><span id="mPGoal">/ 180g protein</span></div>
+            <div class="pbar"><div id="bP" style="width:0%;background:var(--c-activity)"></div></div>
+          </div>
+          <div class="macro">
+            <div class="macro-top"><b id="mC">0g</b><span id="mCGoal">/ 220g carbs</span></div>
+            <div class="pbar"><div id="bC" style="width:0%;background:var(--c-hustle)"></div></div>
+          </div>
+          <div class="macro">
+            <div class="macro-top"><b id="mF">0g</b><span id="mFGoal">/ 70g fat</span></div>
+            <div class="pbar"><div id="bF" style="width:0%;background:var(--c-custom)"></div></div>
+          </div>
+        </div>
+        <details class="adv">
+          <summary>Set my daily targets</summary>
+          <div class="row" style="margin-top:10px">
+            <input type="number" id="gKcal" placeholder="Calories" style="width:110px">
+            <input type="number" id="gP" placeholder="Protein g" style="width:110px">
+            <input type="number" id="gC" placeholder="Carbs g" style="width:110px">
+            <input type="number" id="gF" placeholder="Fat g" style="width:110px">
+            <button class="ghost" id="saveGoals">Save targets</button>
+          </div>
+        </details>
       </div>
+
+      <div class="card">
+        <h2>Log food <span class="count">· search 560+ foods</span></h2>
+        <div class="row" style="margin-bottom:8px">
+          <select id="logMeal" style="width:130px">
+            <option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option>
+          </select>
+          <input type="date" id="foodDate">
+        </div>
+        <div style="position:relative">
+          <input type="text" id="foodSearch" placeholder="Start typing — chicken breast, oatmeal, Chipotle bowl…" autocomplete="off" style="width:100%">
+          <div id="foodResults" class="fsearch" hidden></div>
+        </div>
+        <div id="foodPick" hidden style="margin-top:10px">
+          <div class="row">
+            <b id="pickName" style="flex:1;min-width:120px"></b>
+            <input type="number" id="pickQty" value="1" min="0.25" step="0.25" style="width:80px">
+            <span id="pickServing" style="font-size:13px;color:var(--muted)"></span>
+            <button class="primary" id="pickAdd">Add</button>
+            <button class="ghost" id="pickCancel">✕</button>
+          </div>
+          <div id="pickMacros" style="font-size:13px;color:var(--ink-2);margin-top:6px"></div>
+        </div>
+        <details class="adv">
+          <summary>Not in the list? Add it manually</summary>
+          <div class="row" style="margin-top:10px">
+            <input type="text" id="cfName" class="grow" placeholder="Food name" maxlength="60">
+            <input type="number" id="cfKcal" placeholder="Cal" style="width:80px">
+            <input type="number" id="cfP" placeholder="P" style="width:70px">
+            <input type="number" id="cfC" placeholder="C" style="width:70px">
+            <input type="number" id="cfF" placeholder="F" style="width:70px">
+            <button class="ghost" id="cfAddFood">Log it</button>
+          </div>
+        </details>
+      </div>
+
+      <div class="card">
+        <h2>Today's meals <span class="count" id="mealCount"></span></h2>
+        <div id="mealList"></div>
+      </div>
+
       <div class="grid-2">
         <div class="card">
           <h2>Grocery list <span class="count" id="grocCount"></span></h2>
@@ -549,30 +651,27 @@
             <button class="primary" id="grocAdd">Add</button>
           </div>
           <div id="grocList"></div>
-          <div style="font-size:12px;color:var(--muted);margin-top:8px">Check an item off when you buy it — it moves to your kitchen list →</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:8px">Check it off when you buy it — it moves to your pantry →</div>
         </div>
         <div class="card">
-          <h2>In the kitchen <span class="count" id="pantryCount"></span></h2>
+          <h2>Pantry <span class="count" id="pantryCount"></span></h2>
           <div id="pantryList"></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:8px">Eat it → logs the calories and clears it from your pantry, so this list is always what you actually still have.</div>
         </div>
       </div>
+
       <div class="card">
-        <h2>This week's plate — eaten vs. wasted</h2>
+        <h2>This week — eaten vs wasted</h2>
+        <div class="tiles" style="margin-bottom:10px">
+          <div class="tile"><div class="t-label">EATEN</div><div class="t-value" id="fdEaten">0</div><div class="t-hint">items finished</div></div>
+          <div class="tile"><div class="t-label">WASTED</div><div class="t-value" id="fdWasted">0</div><div class="t-hint" id="fdWastedHint">went bad</div></div>
+          <div class="tile"><div class="t-label">USE-IT RATE</div><div class="t-value" id="fdRate">—</div><div class="t-hint">eaten ÷ finished</div></div>
+          <div class="tile"><div class="t-label">AVG CAL / DAY</div><div class="t-value" id="avgCal">—</div><div class="t-hint">last 7 days</div></div>
+        </div>
         <div id="fdWeekReview"></div>
       </div>
-      <div class="card">
-        <h2>Meal log</h2>
-        <div class="row" style="margin-bottom:10px">
-          <select id="foodMeal">
-            <option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option>
-          </select>
-          <input type="date" id="foodDate">
-          <input type="text" id="foodDesc" class="grow" placeholder="What did you eat?" maxlength="200">
-          <button class="primary" id="foodAdd">Log</button>
-        </div>
-        <div id="foodList"></div>
-      </div>
     </section>
+
 
     <!-- ============ ACTIVITY ============ -->
     <section class="view" id="view-activity">
@@ -711,6 +810,30 @@
       <div id="caDetail" hidden></div>
     </section>
 
+    <!-- ============ GOALS ============ -->
+    <section class="view" id="view-goals">
+      <div class="page-head"><h1>Goals</h1><span class="sub">Deadlines you can see coming</span></div>
+      <div class="card">
+        <h2>New goal</h2>
+        <div class="row" style="margin-bottom:10px">
+          <input type="text" id="glTitle" class="grow" placeholder="e.g. Make $1,000/month from side hustles" maxlength="120">
+          <input type="date" id="glDate">
+        </div>
+        <div class="row" style="margin-bottom:10px">
+          <select id="glArea" style="width:150px"></select>
+          <input type="number" id="glTarget" placeholder="Target number (optional)" style="width:190px" step="any">
+          <input type="text" id="glUnit" placeholder="Unit — $, lbs, books" style="width:170px" maxlength="12">
+        </div>
+        <input type="text" id="glWhy" placeholder="Why it matters (optional) — shows up when you're close to the deadline" maxlength="160" style="width:100%;margin-bottom:10px">
+        <button class="primary" id="glAdd">Add goal</button>
+      </div>
+      <div id="glList"></div>
+      <div class="card" id="glDoneWrap" hidden>
+        <h2>Achieved <span class="count" id="glDoneCount"></span></h2>
+        <div id="glDone"></div>
+      </div>
+    </section>
+
     <!-- ============ WEEK REVIEW ============ -->
     <section class="view" id="view-review">
       <div class="page-head"><h1>Week in review</h1><span class="sub" id="revRange"></span></div>
@@ -745,6 +868,7 @@
   <button data-view="activity"><span class="ico">🏋️</span>Activity</button>
   <button data-view="faith"><span class="ico">✝️</span>Faith</button>
   <button data-view="hustles"><span class="ico">💵</span>Hustle</button>
+  <button data-view="goals"><span class="ico">🎯</span>Goals</button>
   <span id="tabAreas" style="display:contents"></span>
   <button data-view="custom" data-area=""><span class="ico">＋</span>Add</button>
   <button data-view="review"><span class="ico">📊</span>Review</button>
@@ -802,6 +926,606 @@ const AREAS = {
   custom:   { label: "Custom",      color: "var(--c-custom)"   }
 };
 
+/* ============================================================
+   FOOD DATABASE — 560 common foods (per listed serving)
+   name | category | serving | grams | kcal | protein | carbs | fat
+   ============================================================ */
+const FOOD_RAW = `Chicken breast, grilled|Protein|4 oz|113|165|31|0|3.6
+Chicken breast, raw|Protein|100 g|100|120|22.5|0|2.6
+Chicken thigh, grilled|Protein|4 oz|113|209|26|0|10.9
+Chicken thigh, boneless skinless|Protein|1 thigh|85|151|19|0|8
+Chicken wings, baked|Protein|4 wings|120|287|26|0|20
+Chicken drumstick|Protein|1 drumstick|90|172|18|0|10
+Rotisserie chicken, white meat|Protein|4 oz|113|190|29|0|7.5
+Ground chicken, 93/7|Protein|4 oz|113|170|22|0|9
+Turkey breast, roasted|Protein|4 oz|113|153|34|0|1
+Ground turkey, 93/7|Protein|4 oz|113|170|22|0|9
+Turkey bacon|Protein|2 slices|30|60|4|1|4.5
+Deli turkey slices|Protein|2 oz|56|60|10|2|1
+Ribeye steak|Protein|8 oz|227|640|48|0|48
+Sirloin steak|Protein|8 oz|227|414|62|0|17
+Filet mignon|Protein|6 oz|170|348|48|0|16
+Flank steak|Protein|6 oz|170|300|48|0|11
+Ground beef, 80/20|Protein|4 oz|113|287|19|0|23
+Ground beef, 90/10|Protein|4 oz|113|199|23|0|11
+Ground beef, 93/7|Protein|4 oz|113|170|23|0|8
+Beef brisket, smoked|Protein|4 oz|113|330|24|0|25
+Pork chop, grilled|Protein|6 oz|170|340|46|0|16
+Pork tenderloin|Protein|4 oz|113|136|24|0|4
+Pork belly|Protein|3 oz|85|518|9|0|53
+Bacon|Protein|2 slices|20|86|6|0|7
+Ham, sliced|Protein|3 oz|85|123|17|2|5
+Pork sausage link|Protein|1 link|68|229|10|1|20
+Italian sausage|Protein|1 link|83|286|16|1|24
+Bratwurst|Protein|1 link|85|283|12|2|25
+Hot dog, beef|Protein|1 hot dog|52|186|6|2|17
+Chorizo|Protein|2 oz|56|258|14|1|22
+Pepperoni|Protein|1 oz|28|138|6|0|12
+Salami|Protein|1 oz|28|110|6|1|9
+Prosciutto|Protein|1 oz|28|70|8|0|4
+Lamb chop|Protein|4 oz|113|294|25|0|21
+Ground lamb|Protein|4 oz|113|319|19|0|27
+Veal cutlet|Protein|4 oz|113|218|31|0|10
+Bison, ground|Protein|4 oz|113|202|24|0|11
+Venison|Protein|4 oz|113|179|34|0|4
+Duck breast, skinless|Protein|4 oz|113|155|29|0|4
+Egg, large whole|Protein|1 egg|50|72|6.3|0.4|4.8
+Egg white, large|Protein|1 white|33|17|3.6|0.2|0
+Egg yolk, large|Protein|1 yolk|17|55|2.7|0.6|4.5
+Scrambled eggs (2, butter)|Protein|2 eggs|120|200|13|2|15
+Hard-boiled egg|Protein|1 egg|50|78|6.3|0.6|5.3
+Liquid egg whites|Protein|1/2 cup|122|63|13|1|0
+Beef jerky|Protein|1 oz|28|116|9.4|3.1|7.3
+Turkey jerky|Protein|1 oz|28|80|13|5|1
+Rotisserie chicken thigh w/ skin|Protein|1 thigh|110|250|22|0|18
+Chicken sausage|Protein|1 link|85|140|14|2|8
+Meatball, beef|Protein|3 meatballs|85|230|13|6|17
+Salmon, Atlantic farmed|Seafood|6 oz|170|412|40|0|27
+Salmon, wild sockeye|Seafood|6 oz|170|310|46|0|13
+Salmon, canned|Seafood|1 can|85|118|17|0|5
+Smoked salmon (lox)|Seafood|2 oz|56|66|10|0|2.4
+Tuna, canned in water|Seafood|1 can|142|140|33|0|1
+Tuna steak, seared|Seafood|6 oz|170|265|56|0|3
+Tilapia|Seafood|6 oz|170|218|44|0|4
+Cod|Seafood|6 oz|170|187|41|0|1.5
+Halibut|Seafood|6 oz|170|223|42|0|5
+Mahi mahi|Seafood|6 oz|170|186|40|0|1.5
+Trout, rainbow|Seafood|6 oz|170|250|38|0|10
+Sardines, canned in oil|Seafood|1 can|92|191|23|0|11
+Mackerel|Seafood|4 oz|113|262|24|0|18
+Sea bass|Seafood|6 oz|170|211|40|0|4
+Snapper|Seafood|6 oz|170|218|45|0|3
+Catfish|Seafood|6 oz|170|217|37|0|7
+Shrimp, cooked|Seafood|4 oz|113|135|26|1|2
+Shrimp, breaded fried|Seafood|6 pieces|85|206|9|10|14
+Crab meat|Seafood|4 oz|113|110|22|0|2
+King crab legs|Seafood|6 oz|170|145|30|0|2
+Lobster tail|Seafood|1 tail|145|129|28|0|1
+Scallops|Seafood|4 oz|113|94|18|3|1
+Oysters|Seafood|6 oysters|84|58|6|3|2
+Mussels|Seafood|4 oz|113|194|27|8|5
+Clams|Seafood|4 oz|113|168|29|6|2
+Calamari, fried|Seafood|4 oz|113|300|15|17|18
+Fish sticks|Seafood|5 sticks|140|350|14|30|19
+Sushi roll, California|Seafood|1 roll|170|255|9|38|7
+Sushi roll, spicy tuna|Seafood|1 roll|170|290|13|36|11
+Salmon nigiri|Seafood|2 pieces|80|130|9|17|3
+Poke bowl, tuna|Seafood|1 bowl|400|600|38|68|18
+Milk, whole|Dairy|1 cup|244|149|8|12|8
+Milk, 2%|Dairy|1 cup|244|122|8|12|5
+Milk, skim|Dairy|1 cup|245|83|8|12|0.2
+Almond milk, unsweetened|Dairy|1 cup|240|30|1|1|2.5
+Oat milk|Dairy|1 cup|240|120|3|16|5
+Soy milk, unsweetened|Dairy|1 cup|243|80|7|4|4
+Coconut milk beverage|Dairy|1 cup|240|45|0|2|4.5
+Greek yogurt, plain nonfat|Dairy|1 cup|227|146|25|9|0.7
+Greek yogurt, plain 2%|Dairy|1 cup|227|173|24|9|4.5
+Greek yogurt, flavored|Dairy|1 container|150|140|12|18|2
+Skyr|Dairy|1 container|150|110|17|8|0
+Regular yogurt, plain|Dairy|1 cup|245|149|9|11|8
+Cottage cheese, 2%|Dairy|1 cup|226|183|24|9|5
+Cottage cheese, 4%|Dairy|1 cup|226|206|23|8|9
+Cheddar cheese|Dairy|1 oz|28|115|7|0.4|9.5
+Mozzarella, part skim|Dairy|1 oz|28|72|7|1|4.5
+Fresh mozzarella|Dairy|1 oz|28|85|6|1|6
+Parmesan, grated|Dairy|2 tbsp|10|43|3.8|0.4|2.8
+Swiss cheese|Dairy|1 oz|28|111|8|1.5|9
+Provolone|Dairy|1 oz|28|98|7|1|7
+American cheese|Dairy|1 slice|21|70|4|1|5
+Feta cheese|Dairy|1 oz|28|75|4|1|6
+Goat cheese|Dairy|1 oz|28|75|5|0|6
+Blue cheese|Dairy|1 oz|28|100|6|1|8
+Cream cheese|Dairy|2 tbsp|29|99|2|1.6|10
+Ricotta, part skim|Dairy|1/2 cup|124|171|14|6|10
+String cheese|Dairy|1 stick|28|80|6|1|6
+Butter|Dairy|1 tbsp|14|102|0.1|0|11.5
+Ghee|Dairy|1 tbsp|14|123|0|0|14
+Heavy cream|Dairy|1 tbsp|15|51|0.3|0.4|5.4
+Half and half|Dairy|1 tbsp|15|20|0.4|0.6|1.7
+Sour cream|Dairy|2 tbsp|30|59|0.7|1.3|5.6
+Whipped cream|Dairy|2 tbsp|10|30|0.2|1.5|2.5
+Ice cream, vanilla|Dairy|1/2 cup|66|137|2.3|16|7.3
+Frozen yogurt|Dairy|1/2 cup|87|110|3|19|3
+Kefir, plain|Dairy|1 cup|243|104|9|12|2.5
+White rice, cooked|Grain|1 cup|186|242|4.4|53|0.4
+Brown rice, cooked|Grain|1 cup|195|248|5.5|52|2
+Jasmine rice, cooked|Grain|1 cup|186|238|4.4|53|0.4
+Basmati rice, cooked|Grain|1 cup|186|210|4|46|0.5
+Cauliflower rice|Grain|1 cup|107|25|2|5|0.3
+Quinoa, cooked|Grain|1 cup|185|222|8|39|3.6
+Couscous, cooked|Grain|1 cup|157|176|6|36|0.3
+Farro, cooked|Grain|1 cup|170|200|8|40|1.5
+Barley, cooked|Grain|1 cup|157|193|3.5|44|0.7
+Oats, rolled dry|Grain|1/2 cup|40|150|5|27|3
+Oatmeal, cooked|Grain|1 cup|234|166|6|28|3.6
+Steel-cut oats, cooked|Grain|1 cup|240|170|6|29|3
+Overnight oats w/ milk|Grain|1 bowl|300|350|14|50|10
+Grits, cooked|Grain|1 cup|242|182|4|38|0.6
+Cream of wheat|Grain|1 cup|241|126|4|26|0.5
+Pasta, spaghetti cooked|Grain|1 cup|140|221|8|43|1.3
+Penne pasta, cooked|Grain|1 cup|140|220|8|43|1.3
+Whole wheat pasta, cooked|Grain|1 cup|140|174|7.5|37|0.8
+Chickpea pasta, cooked|Grain|1 cup|140|190|14|32|3.5
+Ramen noodles, instant|Grain|1 package|85|380|8|52|14
+Rice noodles, cooked|Grain|1 cup|176|192|1.6|44|0.4
+Egg noodles, cooked|Grain|1 cup|160|221|7|40|3.3
+Macaroni and cheese|Grain|1 cup|198|376|13|47|15
+Bread, white|Grain|1 slice|29|77|2.6|14|1
+Bread, whole wheat|Grain|1 slice|32|81|4|14|1.1
+Sourdough bread|Grain|1 slice|36|93|3.8|18|0.6
+Rye bread|Grain|1 slice|32|83|2.7|15.5|1.1
+Ezekiel bread|Grain|1 slice|34|80|4|15|0.5
+Bagel, plain|Grain|1 bagel|105|289|11|56|1.7
+Everything bagel|Grain|1 bagel|105|300|11|56|3
+English muffin|Grain|1 muffin|57|134|4.4|26|1
+Croissant|Grain|1 croissant|57|231|4.7|26|12
+Biscuit|Grain|1 biscuit|60|212|4|27|10
+Dinner roll|Grain|1 roll|38|110|3|19|2
+Hamburger bun|Grain|1 bun|52|145|5|26|2
+Hot dog bun|Grain|1 bun|43|120|4|21|2
+Pita bread|Grain|1 pita|60|165|5.5|33|0.7
+Naan|Grain|1 piece|90|262|9|45|5
+Tortilla, flour 8-inch|Grain|1 tortilla|49|146|4|24|4
+Tortilla, corn|Grain|1 tortilla|26|52|1.4|11|0.7
+Low-carb tortilla|Grain|1 tortilla|42|60|5|17|2
+Pancakes|Grain|2 pancakes|150|350|8|45|15
+Waffle|Grain|1 waffle|75|218|6|25|11
+French toast|Grain|2 slices|130|290|10|33|13
+Cereal, Cheerios|Grain|1 cup|28|100|3|20|2
+Cereal, Frosted Flakes|Grain|1 cup|41|150|2|36|0
+Cereal, granola|Grain|1/2 cup|61|280|6|38|12
+Cereal, Raisin Bran|Grain|1 cup|59|190|5|46|1
+Cereal, Special K|Grain|1 cup|31|120|6|23|0.5
+Granola bar|Grain|1 bar|40|190|4|29|7
+Protein bar, Quest|Grain|1 bar|60|200|21|21|8
+Clif bar|Grain|1 bar|68|250|9|45|5
+RXBAR|Grain|1 bar|52|210|12|24|9
+Rice cake|Grain|1 cake|9|35|0.7|7.3|0.3
+Crackers, saltine|Grain|5 crackers|15|65|1.3|11|1.4
+Crackers, Ritz|Grain|5 crackers|16|80|1|10|4
+Triscuits|Grain|6 crackers|28|120|3|20|4.5
+Goldfish crackers|Grain|55 pieces|30|140|3|20|5
+Pretzels|Grain|1 oz|28|108|2.9|22.5|0.8
+Popcorn, air-popped|Grain|3 cups|24|93|3|19|1
+Popcorn, movie theater|Grain|medium|112|590|9|63|34
+Corn tortilla chips|Grain|1 oz|28|140|2|18|7
+Pita chips|Grain|1 oz|28|130|3|19|5
+Stuffing, prepared|Grain|1/2 cup|100|177|3|22|9
+Pizza dough, raw|Grain|1/6 crust|57|150|5|30|1
+Cornbread|Grain|1 piece|65|198|4|33|6
+Banana bread|Grain|1 slice|60|196|2.6|33|6
+Muffin, blueberry|Grain|1 muffin|113|385|6|54|16
+Donut, glazed|Grain|1 donut|60|260|3|31|14
+Cinnamon roll|Grain|1 roll|100|340|5|51|13
+Apple|Fruit|1 medium|182|95|0.5|25|0.3
+Banana|Fruit|1 medium|118|105|1.3|27|0.4
+Orange|Fruit|1 medium|131|62|1.2|15|0.2
+Strawberries|Fruit|1 cup|152|49|1|12|0.5
+Blueberries|Fruit|1 cup|148|84|1.1|21|0.5
+Raspberries|Fruit|1 cup|123|64|1.5|15|0.8
+Blackberries|Fruit|1 cup|144|62|2|14|0.7
+Grapes|Fruit|1 cup|151|104|1.1|27|0.2
+Watermelon|Fruit|1 cup|152|46|0.9|11.5|0.2
+Cantaloupe|Fruit|1 cup|160|54|1.3|13|0.3
+Honeydew|Fruit|1 cup|170|61|0.9|15|0.2
+Pineapple|Fruit|1 cup|165|83|0.9|22|0.2
+Mango|Fruit|1 cup|165|99|1.4|25|0.6
+Peach|Fruit|1 medium|150|59|1.4|14|0.4
+Pear|Fruit|1 medium|178|101|0.6|27|0.2
+Plum|Fruit|1 medium|66|30|0.5|7.5|0.2
+Cherries|Fruit|1 cup|154|97|2|25|0.3
+Kiwi|Fruit|1 medium|69|42|0.8|10|0.4
+Pomegranate seeds|Fruit|1/2 cup|87|72|1.5|16|1
+Grapefruit|Fruit|1/2 fruit|123|52|1|13|0.2
+Avocado|Fruit|1/2 medium|100|160|2|8.5|14.7
+Lemon|Fruit|1 medium|58|17|0.6|5.4|0.2
+Lime|Fruit|1 medium|67|20|0.5|7|0.1
+Dates, Medjool|Fruit|2 dates|48|133|0.8|36|0.1
+Raisins|Fruit|1/4 cup|41|123|1.3|33|0.2
+Dried cranberries|Fruit|1/4 cup|40|130|0|33|0.5
+Dried apricots|Fruit|1/4 cup|33|80|1|21|0.2
+Banana chips|Fruit|1 oz|28|147|0.7|17|9.5
+Applesauce, unsweetened|Fruit|1/2 cup|122|51|0.2|14|0.1
+Fruit cup, mixed|Fruit|1 cup|140|80|1|20|0
+Frozen mixed berries|Fruit|1 cup|140|70|1|17|0.5
+Coconut, shredded|Fruit|1/4 cup|20|142|1.3|5|13
+Papaya|Fruit|1 cup|145|62|0.7|16|0.4
+Nectarine|Fruit|1 medium|142|63|1.5|15|0.5
+Tangerine|Fruit|1 medium|88|47|0.7|12|0.3
+Star fruit|Fruit|1 medium|91|28|1|6|0.3
+Guava|Fruit|1 medium|55|37|1.4|8|0.5
+Passion fruit|Fruit|1 fruit|18|17|0.4|4|0.1
+Broccoli, cooked|Veg|1 cup|156|55|3.7|11|0.6
+Broccoli, raw|Veg|1 cup|91|31|2.6|6|0.3
+Spinach, raw|Veg|1 cup|30|7|0.9|1.1|0.1
+Spinach, cooked|Veg|1 cup|180|41|5.3|6.8|0.5
+Kale, raw|Veg|1 cup|21|7|0.6|0.9|0.3
+Romaine lettuce|Veg|2 cups|94|16|1.2|3|0.3
+Mixed greens|Veg|2 cups|72|15|1.5|3|0.2
+Arugula|Veg|2 cups|40|10|1|1.4|0.3
+Cabbage, raw|Veg|1 cup|89|22|1.1|5|0.1
+Brussels sprouts, roasted|Veg|1 cup|156|56|4|11|0.8
+Cauliflower, cooked|Veg|1 cup|124|29|2.3|5|0.6
+Asparagus, cooked|Veg|1 cup|180|40|4.3|7.4|0.4
+Green beans, cooked|Veg|1 cup|125|44|2.4|10|0.4
+Carrots, raw|Veg|1 cup|128|52|1.2|12|0.3
+Baby carrots|Veg|10 carrots|100|35|0.6|8|0.1
+Celery|Veg|2 stalks|80|13|0.6|2.4|0.1
+Cucumber|Veg|1 cup|119|16|0.8|3.8|0.1
+Bell pepper, red|Veg|1 medium|119|37|1.4|7|0.4
+Bell pepper, green|Veg|1 medium|119|24|1|5.5|0.2
+Tomato|Veg|1 medium|123|22|1.1|4.8|0.2
+Cherry tomatoes|Veg|1 cup|149|27|1.3|6|0.3
+Onion, raw|Veg|1/2 cup|80|32|0.9|7.5|0.1
+Red onion|Veg|1/2 cup|80|32|0.9|7.5|0.1
+Garlic|Veg|1 clove|3|4|0.2|1|0
+Mushrooms, white|Veg|1 cup|70|15|2.2|2.3|0.2
+Mushrooms, portobello|Veg|1 cap|84|22|2.1|3.9|0.4
+Zucchini, cooked|Veg|1 cup|180|27|2|4.8|0.5
+Yellow squash|Veg|1 cup|180|36|1.6|8|0.3
+Eggplant, cooked|Veg|1 cup|99|35|0.8|8.6|0.2
+Sweet potato, baked|Veg|1 medium|150|103|2.3|24|0.2
+Sweet potato fries|Veg|4 oz|113|220|2|31|10
+Russet potato, baked|Veg|1 medium|173|168|4.6|37|0.2
+Mashed potatoes|Veg|1 cup|210|237|4|35|9
+French fries|Veg|medium order|117|365|4|48|17
+Tater tots|Veg|10 pieces|86|170|2|20|9
+Hash browns|Veg|1 cup|156|413|5|55|20
+Corn, sweet|Veg|1 cup|164|177|5.4|41|2.1
+Corn on the cob|Veg|1 ear|90|77|3|17|1
+Peas, green|Veg|1 cup|160|134|8.6|25|0.4
+Beets, cooked|Veg|1 cup|170|75|2.9|17|0.3
+Butternut squash|Veg|1 cup|205|82|1.8|22|0.2
+Acorn squash|Veg|1 cup|205|115|2.3|30|0.3
+Pumpkin, canned|Veg|1/2 cup|122|42|1.4|10|0.4
+Artichoke|Veg|1 medium|120|64|3.5|14|0.4
+Okra, cooked|Veg|1 cup|160|35|3|7|0.2
+Bok choy|Veg|1 cup|70|9|1|1.5|0.1
+Snap peas|Veg|1 cup|63|26|1.8|5|0.1
+Radish|Veg|1 cup|116|19|0.8|4|0.1
+Coleslaw|Veg|1/2 cup|60|110|0.8|9|8
+Side salad w/ dressing|Veg|1 salad|150|150|2|10|11
+Caesar salad|Veg|1 bowl|200|340|8|12|30
+Greek salad|Veg|1 bowl|250|230|7|12|18
+Roasted vegetables, mixed|Veg|1 cup|150|120|3|15|6
+Stir-fry vegetables|Veg|1 cup|140|90|3|12|4
+Sauerkraut|Veg|1/2 cup|71|14|0.7|3|0.1
+Kimchi|Veg|1/2 cup|75|15|1|2.4|0.5
+Pickles, dill|Veg|1 spear|35|4|0.2|0.8|0
+Olives, green|Veg|10 olives|40|58|0.4|1.5|6
+Olives, kalamata|Veg|10 olives|40|70|0.5|2|7
+Almonds|Nut|1 oz|28|164|6|6|14
+Almond butter|Nut|2 tbsp|32|196|7|6|18
+Peanuts|Nut|1 oz|28|161|7.3|4.6|14
+Peanut butter|Nut|2 tbsp|32|188|8|6|16
+Powdered peanut butter|Nut|2 tbsp|12|45|5|5|1.5
+Cashews|Nut|1 oz|28|157|5.2|9|12
+Cashew butter|Nut|2 tbsp|32|188|5.6|9|16
+Walnuts|Nut|1 oz|28|185|4.3|3.9|18.5
+Pecans|Nut|1 oz|28|196|2.6|4|20
+Pistachios|Nut|1 oz|28|159|5.7|8|12.8
+Macadamia nuts|Nut|1 oz|28|204|2.2|3.9|21.5
+Hazelnuts|Nut|1 oz|28|178|4.2|4.7|17
+Brazil nuts|Nut|1 oz|28|187|4|3.5|19
+Mixed nuts|Nut|1 oz|28|173|5|6|15
+Trail mix|Nut|1/4 cup|38|173|5|17|11
+Sunflower seeds|Nut|1 oz|28|165|5.5|6.5|14
+Pumpkin seeds|Nut|1 oz|28|158|9|3|14
+Chia seeds|Nut|2 tbsp|24|138|4.7|12|8.7
+Flaxseed, ground|Nut|2 tbsp|14|75|2.6|4|6
+Hemp seeds|Nut|3 tbsp|30|166|9.5|2.6|14.6
+Sesame seeds|Nut|1 tbsp|9|52|1.6|2.1|4.5
+Tahini|Nut|2 tbsp|30|178|5|6|16
+Nutella|Nut|2 tbsp|37|200|2|22|11
+Olive oil|Fat|1 tbsp|14|119|0|0|14
+Extra virgin olive oil|Fat|1 tbsp|14|119|0|0|14
+Coconut oil|Fat|1 tbsp|14|121|0|0|14
+Avocado oil|Fat|1 tbsp|14|124|0|0|14
+Canola oil|Fat|1 tbsp|14|124|0|0|14
+Vegetable oil|Fat|1 tbsp|14|120|0|0|14
+Sesame oil|Fat|1 tbsp|14|120|0|0|14
+MCT oil|Fat|1 tbsp|14|115|0|0|14
+Cooking spray|Fat|1 spray|1|5|0|0|0.5
+Mayonnaise|Fat|1 tbsp|14|94|0.1|0.1|10
+Light mayonnaise|Fat|1 tbsp|15|35|0|1|3.5
+Guacamole|Fat|2 tbsp|30|50|0.7|3|4.5
+Black beans, cooked|Legume|1 cup|172|227|15|41|0.9
+Pinto beans, cooked|Legume|1 cup|171|245|15|45|1.1
+Kidney beans, cooked|Legume|1 cup|177|225|15|40|0.9
+Chickpeas, cooked|Legume|1 cup|164|269|15|45|4.2
+Refried beans|Legume|1/2 cup|119|110|6|18|1
+Lentils, cooked|Legume|1 cup|198|230|18|40|0.8
+Split peas, cooked|Legume|1 cup|196|231|16|41|0.8
+Edamame, shelled|Legume|1 cup|155|188|18|14|8
+Navy beans, cooked|Legume|1 cup|182|255|15|47|1.1
+Lima beans, cooked|Legume|1 cup|170|209|12|40|0.5
+Baked beans|Legume|1/2 cup|127|119|6|27|0.4
+Hummus|Legume|2 tbsp|30|70|2|4|5
+Tofu, firm|Legume|4 oz|113|94|10|2.3|6
+Tofu, silken|Legume|4 oz|113|62|7|2|3
+Tempeh|Legume|4 oz|113|222|21|9|13
+Seitan|Legume|3 oz|85|108|21|4|1
+Veggie burger patty|Legume|1 patty|71|124|11|10|4.5
+Beyond Burger patty|Legume|1 patty|113|230|20|7|14
+Impossible Burger patty|Legume|1 patty|113|240|19|9|14
+Whey protein powder|Protein|1 scoop|31|120|24|3|1.5
+Casein protein powder|Protein|1 scoop|33|120|24|3|1
+Plant protein powder|Protein|1 scoop|33|130|21|5|2.5
+Protein shake, premade|Protein|1 bottle|325|160|30|5|3
+Mass gainer shake|Protein|2 scoops|165|650|50|85|10
+Collagen peptides|Protein|1 scoop|11|40|10|0|0
+Water|Drink|1 cup|240|0|0|0|0
+Coffee, black|Drink|1 cup|240|2|0.3|0|0
+Coffee w/ cream and sugar|Drink|1 cup|240|80|1|10|4
+Latte, whole milk|Drink|16 oz|480|220|12|18|11
+Latte, skim|Drink|16 oz|480|130|13|19|0.5
+Cappuccino|Drink|12 oz|360|120|8|10|6
+Espresso|Drink|1 shot|30|3|0.1|0.5|0
+Cold brew, black|Drink|16 oz|473|5|0|0|0
+Iced coffee w/ milk|Drink|16 oz|473|90|4|10|3.5
+Starbucks Frappuccino|Drink|grande|473|380|5|60|15
+Tea, unsweetened|Drink|1 cup|240|2|0|0.5|0
+Green tea|Drink|1 cup|240|2|0|0|0
+Sweet tea|Drink|16 oz|473|180|0|46|0
+Orange juice|Drink|1 cup|248|112|1.7|26|0.5
+Apple juice|Drink|1 cup|248|114|0.2|28|0.3
+Cranberry juice|Drink|1 cup|253|116|1|31|0.3
+Grape juice|Drink|1 cup|253|152|1.4|37|0.3
+Lemonade|Drink|1 cup|248|99|0.2|26|0.1
+Coca-Cola|Drink|12 oz can|368|140|0|39|0
+Diet Coke|Drink|12 oz can|355|0|0|0|0
+Sprite|Drink|12 oz can|368|140|0|38|0
+Dr Pepper|Drink|12 oz can|368|150|0|40|0
+Root beer|Drink|12 oz can|368|160|0|45|0
+Gatorade|Drink|20 oz|591|140|0|36|0
+Powerade|Drink|20 oz|591|130|0|35|0
+Red Bull|Drink|8.4 oz|250|110|1|28|0
+Monster Energy|Drink|16 oz|473|210|0|54|0
+Celsius|Drink|12 oz|355|10|0|2|0
+Pre-workout|Drink|1 scoop|10|10|0|2|0
+Beer, regular|Drink|12 oz|356|153|1.6|13|0
+Light beer|Drink|12 oz|356|103|0.9|5.8|0
+IPA|Drink|12 oz|356|200|2|17|0
+White claw|Drink|1 can|355|100|0|2|0
+Wine, red|Drink|5 oz|147|125|0.1|3.8|0
+Wine, white|Drink|5 oz|147|121|0.1|3.8|0
+Champagne|Drink|5 oz|147|96|0.2|1.5|0
+Vodka|Drink|1.5 oz|42|97|0|0|0
+Whiskey|Drink|1.5 oz|42|105|0|0|0
+Tequila|Drink|1.5 oz|42|97|0|0|0
+Rum and Coke|Drink|1 drink|240|185|0|18|0
+Margarita|Drink|1 drink|240|280|0|36|0
+Old fashioned|Drink|1 drink|100|155|0|4|0
+Smoothie, fruit|Drink|16 oz|473|280|4|60|2
+Protein smoothie|Drink|16 oz|473|350|30|40|7
+Kombucha|Drink|1 bottle|414|60|0|14|0
+Coconut water|Drink|1 cup|240|45|0|9|0
+Chocolate milk|Drink|1 cup|250|208|8|26|8.5
+Chocolate chip cookie|Sweet|1 cookie|30|148|1.5|20|7
+Oreo cookies|Sweet|3 cookies|34|160|1|25|7
+Brownie|Sweet|1 square|56|227|3|36|9
+Chocolate cake slice|Sweet|1 slice|95|352|5|51|16
+Cheesecake slice|Sweet|1 slice|125|401|7|32|28
+Apple pie slice|Sweet|1 slice|125|296|2.4|43|14
+Chocolate bar, milk|Sweet|1 bar|43|235|3|26|13
+Dark chocolate 70%|Sweet|1 oz|28|170|2|13|12
+Snickers bar|Sweet|1 bar|52|250|4|33|12
+M&Ms|Sweet|1 pack|48|240|2|34|10
+Reeses cups|Sweet|2 cups|42|210|5|24|13
+Gummy bears|Sweet|1 oz|28|100|2|22|0
+Skittles|Sweet|1 pack|61|250|0|56|2.5
+Jelly beans|Sweet|1 oz|28|105|0|26|0
+Marshmallows|Sweet|4 pieces|29|92|0.5|23|0
+Rice Krispies treat|Sweet|1 bar|22|90|0.6|17|2
+Pop-Tart|Sweet|1 pastry|50|200|2|38|5
+Twinkie|Sweet|1 cake|43|150|1|27|4.5
+Ice cream sandwich|Sweet|1 sandwich|59|140|2|22|5
+Ice cream cone, soft serve|Sweet|1 cone|100|200|4|32|6
+Milkshake, vanilla|Sweet|16 oz|473|550|12|85|17
+Frozen fruit bar|Sweet|1 bar|75|60|0|15|0
+Halo Top ice cream|Sweet|1/2 cup|66|70|5|14|2
+Honey|Sweet|1 tbsp|21|64|0.1|17|0
+Maple syrup|Sweet|2 tbsp|40|104|0|27|0
+Sugar, white|Sweet|1 tsp|4|16|0|4|0
+Brown sugar|Sweet|1 tsp|4|17|0|4.5|0
+Jam or jelly|Sweet|1 tbsp|20|56|0.1|14|0
+Chocolate chips|Sweet|1/4 cup|43|210|2|28|13
+Whipped topping|Sweet|2 tbsp|9|25|0|2|2
+Potato chips|Snack|1 oz|28|152|2|15|10
+Doritos|Snack|1 oz|28|150|2|18|8
+Cheetos|Snack|1 oz|28|160|2|15|10
+Sun Chips|Snack|1 oz|28|140|2|19|6
+Veggie straws|Snack|1 oz|28|130|1|20|5
+Beef stick (Slim Jim)|Snack|1 stick|28|150|6|2|13
+Cheese and crackers pack|Snack|1 pack|56|200|6|18|12
+Fruit snacks|Snack|1 pouch|23|80|0|19|0
+Applesauce pouch|Snack|1 pouch|90|50|0|13|0
+Yogurt tube|Snack|1 tube|56|50|2|8|1
+Hard-boiled egg pack|Snack|2 eggs|100|140|12|1|10
+Edamame snack pack|Snack|1 pack|100|120|11|10|5
+Seaweed snack|Snack|1 pack|5|25|1|1|1.5
+Beef jerky stick|Snack|1 stick|28|80|8|3|3
+Protein cookie|Snack|1 cookie|57|200|15|18|8
+Rice Krispies|Grain|1 cup|33|130|2|29|0
+Big Mac|Fast food|1 burger|219|590|25|46|34
+McDonalds Quarter Pounder|Fast food|1 burger|199|520|30|42|26
+McDonalds cheeseburger|Fast food|1 burger|115|300|15|32|13
+McDonalds fries, medium|Fast food|1 medium|117|320|5|43|15
+McChicken|Fast food|1 sandwich|143|400|14|39|21
+McDonalds Egg McMuffin|Fast food|1 sandwich|136|310|17|30|13
+McDonalds hotcakes|Fast food|1 order|221|580|9|102|15
+Chick-fil-A sandwich|Fast food|1 sandwich|183|440|29|41|17
+Chick-fil-A grilled sandwich|Fast food|1 sandwich|210|390|28|44|12
+Chick-fil-A nuggets, 8pc|Fast food|8 pieces|113|250|27|11|11
+Chick-fil-A waffle fries, med|Fast food|1 medium|125|420|5|45|24
+Chipotle burrito bowl, chicken|Fast food|1 bowl|500|630|45|60|22
+Chipotle burrito, steak|Fast food|1 burrito|600|1000|45|110|38
+Chipotle chicken salad|Fast food|1 salad|400|400|38|20|18
+Chipotle guacamole|Fast food|1 side|110|230|2|8|22
+Subway 6-inch turkey|Fast food|6 inch|219|280|18|46|3.5
+Subway 6-inch Italian BMT|Fast food|6 inch|239|410|19|46|16
+Subway footlong turkey|Fast food|12 inch|438|560|36|92|7
+Panera Bread bowl soup|Fast food|1 bowl|450|900|25|140|25
+Panera chicken Caesar salad|Fast food|1 salad|350|470|33|13|31
+Pizza, cheese slice|Fast food|1 slice|107|285|12|36|10
+Pizza, pepperoni slice|Fast food|1 slice|111|313|13|36|13
+Dominos medium pizza, whole|Fast food|1 pizza|700|1800|75|220|65
+Pizza Hut personal pan|Fast food|1 pizza|230|590|24|68|24
+Wendys Baconator|Fast food|1 burger|312|950|59|39|62
+Wendys Dave's Single|Fast food|1 burger|218|570|29|39|34
+Wendys chili, small|Fast food|1 small|227|240|17|23|9
+Burger King Whopper|Fast food|1 burger|270|670|31|49|40
+Taco Bell crunchy taco|Fast food|1 taco|78|170|8|13|10
+Taco Bell burrito supreme|Fast food|1 burrito|248|390|17|51|14
+Taco Bell quesadilla, chicken|Fast food|1 quesadilla|184|510|27|38|28
+Five Guys burger|Fast food|1 burger|303|840|47|39|55
+Five Guys fries, regular|Fast food|1 regular|227|953|15|131|41
+In-N-Out Double Double|Fast food|1 burger|330|670|37|39|41
+Shake Shack ShackBurger|Fast food|1 burger|230|550|32|25|33
+Panda Express orange chicken|Fast food|1 serving|156|490|25|51|23
+Panda Express chow mein|Fast food|1 serving|269|510|13|80|20
+Panda Express fried rice|Fast food|1 serving|264|520|11|85|16
+KFC fried chicken breast|Fast food|1 piece|161|390|39|11|21
+KFC popcorn chicken|Fast food|1 serving|113|400|21|30|22
+Popeyes chicken sandwich|Fast food|1 sandwich|219|700|28|50|42
+Arbys roast beef sandwich|Fast food|1 sandwich|154|360|23|37|14
+Jimmy Johns turkey sub|Fast food|1 sub|230|515|26|59|18
+Sweetgreen kale caesar|Fast food|1 bowl|400|540|29|30|35
+Starbucks egg bites|Fast food|2 bites|130|170|19|9|7
+Starbucks bacon gouda sandwich|Fast food|1 sandwich|140|360|17|31|19
+Dunkin bacon egg cheese|Fast food|1 sandwich|165|450|20|38|24
+Bagel with cream cheese|Fast food|1 bagel|150|420|13|58|14
+Chinese beef and broccoli|Meal|1 cup|250|350|30|15|18
+Chinese general tso chicken|Meal|1 cup|250|590|28|60|26
+Chicken fried rice|Meal|1 cup|198|352|18|45|11
+Pad thai, chicken|Meal|1 plate|400|850|30|100|33
+Chicken tikka masala|Meal|1 cup|250|380|30|18|21
+Butter chicken w/ rice|Meal|1 plate|400|700|38|65|32
+Beef burrito|Meal|1 burrito|300|600|25|65|26
+Chicken quesadilla|Meal|1 quesadilla|230|520|30|38|28
+Beef tacos, 3|Meal|3 tacos|250|500|25|45|25
+Chicken caesar wrap|Meal|1 wrap|280|610|32|45|33
+Turkey club sandwich|Meal|1 sandwich|280|600|35|48|30
+Grilled cheese sandwich|Meal|1 sandwich|120|400|13|33|24
+PB&J sandwich|Meal|1 sandwich|110|380|13|48|16
+BLT sandwich|Meal|1 sandwich|180|450|17|38|26
+Chicken noodle soup|Meal|1 cup|241|75|4|9|2.5
+Tomato soup|Meal|1 cup|248|161|4|22|6
+Chili with beef|Meal|1 cup|253|287|22|30|8
+Beef stew|Meal|1 cup|252|235|22|18|8
+Clam chowder|Meal|1 cup|248|201|8|17|11
+Lasagna|Meal|1 piece|280|420|25|35|20
+Spaghetti with meat sauce|Meal|1 plate|350|530|25|65|18
+Chicken alfredo|Meal|1 plate|350|850|40|65|48
+Chicken parmesan|Meal|1 serving|300|620|45|38|30
+Steak and potatoes|Meal|1 plate|400|700|55|40|36
+Salmon and rice bowl|Meal|1 bowl|400|620|42|55|24
+Chicken and rice, meal prep|Meal|1 container|400|550|45|60|12
+Burrito bowl, homemade|Meal|1 bowl|450|650|40|70|20
+Protein pancakes|Meal|3 pancakes|200|400|30|45|10
+Omelette, 3 egg with cheese|Meal|1 omelette|200|400|25|3|32
+Breakfast burrito|Meal|1 burrito|250|550|25|45|30
+Avocado toast|Meal|1 slice|130|250|7|24|15
+Yogurt parfait with granola|Meal|1 cup|250|320|15|45|8
+Acai bowl|Meal|1 bowl|350|450|8|70|14
+Chicken salad, prepared|Meal|1/2 cup|100|270|15|3|22
+Tuna salad, prepared|Meal|1/2 cup|100|190|16|5|11
+Egg salad|Meal|1/2 cup|110|290|13|2|25
+Sushi burrito|Meal|1 roll|350|600|30|75|20
+Ramen, restaurant|Meal|1 bowl|600|700|30|80|28
+Pho, beef|Meal|1 bowl|600|450|30|60|10
+Gyro, lamb|Meal|1 gyro|300|600|30|50|32
+Falafel wrap|Meal|1 wrap|280|550|18|65|25
+Buffalo wings, 8|Meal|8 wings|240|700|50|10|50
+Nachos with cheese|Meal|1 plate|300|700|20|60|42
+Mozzarella sticks|Meal|4 sticks|120|350|16|30|19
+Onion rings|Meal|1 order|100|410|5|45|23
+Ketchup|Condiment|1 tbsp|17|19|0.2|4.7|0
+Mustard|Condiment|1 tsp|5|3|0.2|0.3|0.2
+BBQ sauce|Condiment|2 tbsp|36|60|0|15|0
+Ranch dressing|Condiment|2 tbsp|30|140|0.5|2|15
+Blue cheese dressing|Condiment|2 tbsp|30|145|1|1|15
+Italian dressing|Condiment|2 tbsp|30|70|0|3|6
+Balsamic vinaigrette|Condiment|2 tbsp|31|90|0|3|9
+Caesar dressing|Condiment|2 tbsp|30|160|1|1|17
+Honey mustard|Condiment|2 tbsp|30|130|0|8|11
+Sriracha|Condiment|1 tsp|5|5|0|1|0
+Hot sauce|Condiment|1 tsp|5|1|0|0|0
+Buffalo sauce|Condiment|2 tbsp|30|30|0|1|3
+Soy sauce|Condiment|1 tbsp|16|9|1.3|0.8|0
+Teriyaki sauce|Condiment|1 tbsp|18|30|1|6|0
+Salsa|Condiment|2 tbsp|36|10|0.4|2|0
+Pico de gallo|Condiment|2 tbsp|30|8|0.3|1.7|0
+Marinara sauce|Condiment|1/2 cup|125|80|2|12|2.5
+Alfredo sauce|Condiment|1/4 cup|60|110|2|3|10
+Pesto|Condiment|2 tbsp|32|160|3|2|16
+Tzatziki|Condiment|2 tbsp|30|30|1|2|2
+Relish|Condiment|1 tbsp|15|20|0|5|0
+Tartar sauce|Condiment|2 tbsp|28|140|0|2|14
+Cocktail sauce|Condiment|2 tbsp|34|40|0|9|0
+Gravy, brown|Condiment|1/4 cup|60|25|1|3|1
+Cheese sauce|Condiment|1/4 cup|63|110|4|4|8
+Nutritional yeast|Condiment|2 tbsp|10|40|5|5|0.5
+Balsamic vinegar|Condiment|1 tbsp|16|14|0|2.7|0
+Lemon juice|Condiment|1 tbsp|15|3|0|1|0
+Cinnamon|Condiment|1 tsp|3|6|0.1|2|0
+Sugar-free syrup|Condiment|2 tbsp|30|20|0|8|0`;
+const FOODS = FOOD_RAW.trim().split("\n").map((line, i) => {
+  const [n, cat, s, g, k, p, c, f] = line.split("|");
+  return { i, n, cat, s, g: +g, kcal: +k, p: +p, c: +c, f: +f };
+});
+const foodById = i => FOODS[i];
+function searchFoods(q, limit) {
+  q = q.trim().toLowerCase();
+  if (q.length < 2) return [];
+  const words = q.split(/\s+/);
+  const scored = [];
+  for (const f of FOODS) {
+    const name = f.n.toLowerCase();
+    if (!words.every(w => name.includes(w))) continue;
+    let score = 0;
+    if (name === q) score += 200;
+    else if (name.startsWith(q)) score += 100;
+    else if (name.includes(q)) score += 50;
+    scored.push({ f, score });
+  }
+  // ties break by database order — the most common preparation of a food is listed first
+  return scored.sort((a, b) => b.score - a.score || a.f.i - b.f.i).slice(0, limit || 8).map(x => x.f);
+}
+/* best-effort match of a free-text grocery item to the database */
+function matchFood(text) {
+  const t = text.trim().toLowerCase();
+  if (t.length < 3) return null;
+  let best = null, bestLen = 1e9;
+  for (const f of FOODS) {
+    const n = f.n.toLowerCase();
+    const base = n.split(",")[0];
+    if (n === t || base === t) return f;
+    if ((n.includes(t) || t.includes(base)) && base.length >= 4 && n.length < bestLen) { best = f; bestLen = n.length; }
+  }
+  return best;
+}
+
 const DEFAULT_STATE = {
   tasks: [],            // {id,title,area,rec:{type:'once'|'daily'|'weekly',date?,days?[]},time?,mins?,created}
   done: {},             // { "taskId|YYYY-MM-DD": true }
@@ -815,6 +1539,8 @@ const DEFAULT_STATE = {
   trackerLogs: [],      // legacy
   areas: [],            // {id,name,icon,color,fields:[{id,label,type:'choice'|'number'|'text',options[]}]}
   areaLogs: [],         // {id,areaId,date,values:{fieldId:value}}
+  nutrition: { kcal: 2200, p: 180, c: 220, f: 70 },
+  goals: [],            // {id,title,date,area,target,unit,why,progress,done,created}
   events: [],           // {id,date,start,end,title,allDay,source:'manual'|'ics'|'gcal'}
   plans: {},            // { "YYYY-MM-DD": [{taskId,start,end}] }  (minutes since midnight)
   gcal: { clientId: null, connected: false, lastSync: null },
@@ -1166,91 +1892,215 @@ function renderTasks() {
 /* ============================================================
    FOOD
    ============================================================ */
+function nutriGoals() { return Object.assign({ kcal: 2200, p: 180, c: 220, f: 70 }, S.nutrition || {}); }
+function dayTotals(dateIso) {
+  const t = { kcal: 0, p: 0, c: 0, f: 0 };
+  S.foodLog.filter(e => e.date === dateIso).forEach(e => {
+    t.kcal += e.kcal || 0; t.p += e.p || 0; t.c += e.c || 0; t.f += e.f || 0;
+  });
+  return t;
+}
+const r0 = n => Math.round(n);
+const r1 = n => Math.round(n * 10) / 10;
+
+let pickedFood = null, searchIdx = -1;
+
+function renderFoodSearch() {
+  const q = $("foodSearch").value;
+  const res = searchFoods(q, 8);
+  const box = $("foodResults");
+  if (!res.length) { box.hidden = true; box.innerHTML = ""; return; }
+  box.hidden = false;
+  box.innerHTML = res.map((f, i) => `<button data-fi="${f.i}" class="${i === searchIdx ? "sel" : ""}">
+    <div class="fname">${esc(f.n)}</div>
+    <div class="fmeta">${esc(f.s)} · ${f.kcal} cal · ${f.p}p ${f.c}c ${f.f}f · ${esc(f.cat)}</div></button>`).join("");
+  box.querySelectorAll("[data-fi]").forEach(b => b.addEventListener("click", () => choosePick(+b.dataset.fi)));
+}
+function choosePick(i) {
+  pickedFood = foodById(i);
+  $("foodResults").hidden = true;
+  $("foodSearch").value = "";
+  $("foodPick").hidden = false;
+  $("pickName").textContent = pickedFood.n;
+  $("pickServing").textContent = "× " + pickedFood.s;
+  $("pickQty").value = 1;
+  updatePickMacros();
+}
+function updatePickMacros() {
+  if (!pickedFood) return;
+  const q = Number($("pickQty").value) || 1;
+  $("pickMacros").innerHTML = `<b>${r0(pickedFood.kcal * q)} cal</b> · ${r1(pickedFood.p * q)}g protein · ${r1(pickedFood.c * q)}g carbs · ${r1(pickedFood.f * q)}g fat`;
+}
+function logFood(entry) {
+  S.foodLog.push(Object.assign({ id: uid(), date: $("foodDate").value || todayIso(), meal: $("logMeal").value }, entry));
+  save(); renderFood(); renderToday();
+}
+
 function renderFood() {
-  const g = S.grocery;
-  const toBuy = g.filter(i => !i.checked && !i.status);
-  const pantry = g.filter(i => i.checked && !i.status);
-  const sow = startOfWeek();
-  const finishedThisWeek = g.filter(i => i.status && i.statusDate && fromIso(i.statusDate) >= sow);
-  const eaten = finishedThisWeek.filter(i => i.status === "eaten");
-  const wasted = finishedThisWeek.filter(i => i.status === "wasted");
+  const date = $("foodDate").value || todayIso();
+  $("foodDateLabel").textContent = date === todayIso() ? "Today" : fmtDateY(date);
 
-  $("fdEaten").textContent = eaten.length;
-  $("fdWasted").textContent = wasted.length;
-  $("fdWastedHint").textContent = wasted.length ? "went bad — tighten the list" : "went bad";
-  const fin = eaten.length + wasted.length;
-  $("fdRate").textContent = fin ? Math.round(100 * eaten.length / fin) + "%" : "—";
+  // ---- macro rings ----
+  const g = nutriGoals(), t = dayTotals(date);
+  const setBar = (valEl, goalEl, barEl, val, goal, unit) => {
+    $(valEl).textContent = r0(val) + (unit || "");
+    $(goalEl).textContent = "/ " + goal + (unit || "") + (unit ? "" : " cal");
+    const pct = goal ? Math.min(100, 100 * val / goal) : 0;
+    $(barEl).style.width = pct + "%";
+    $(barEl).parentElement.parentElement.classList.toggle("over", val > goal * 1.02);
+  };
+  setBar("mKcal", "mKcalGoal", "bKcal", t.kcal, g.kcal, "");
+  setBar("mP", "mPGoal", "bP", t.p, g.p, "g");
+  setBar("mC", "mCGoal", "bC", t.c, g.c, "g");
+  setBar("mF", "mFGoal", "bF", t.f, g.f, "g");
+  $("mPGoal").textContent = "/ " + g.p + "g protein";
+  $("mCGoal").textContent = "/ " + g.c + "g carbs";
+  $("mFGoal").textContent = "/ " + g.f + "g fat";
+  const left = g.kcal - t.kcal;
+  $("calRemain").textContent = left >= 0 ? `· ${r0(left)} cal left` : `· ${r0(-left)} cal over`;
+  ["gKcal", "gP", "gC", "gF"].forEach((id, n) => { if (!$(id).value) $(id).value = [g.kcal, g.p, g.c, g.f][n]; });
 
+  // ---- meals ----
+  const todays = S.foodLog.filter(e => e.date === date);
+  $("mealCount").textContent = todays.length ? `· ${todays.length} logged` : "";
+  const order = ["Breakfast", "Lunch", "Dinner", "Snack"];
+  let html = "";
+  for (const m of order) {
+    const items = todays.filter(e => e.meal === m);
+    if (!items.length) continue;
+    const mk = items.reduce((a, e) => a + (e.kcal || 0), 0);
+    html += `<div class="meal-head">${m.toUpperCase()} · ${r0(mk)} CAL</div>` + items.map(e => `
+      <div class="item">
+        <div class="main"><div class="title">${esc(e.desc)}${e.qty && e.qty !== 1 ? ` <span style="color:var(--muted)">×${e.qty}</span>` : ""}</div>
+        <div class="meta">${e.kcal ? `${r0(e.kcal)} cal · ${r1(e.p || 0)}p ${r1(e.c || 0)}c ${r1(e.f || 0)}f` : "no macros logged"}</div></div>
+        <button class="icon-btn" data-fdel="${e.id}">✕</button>
+      </div>`).join("");
+  }
+  const noMeal = todays.filter(e => !order.includes(e.meal));
+  if (noMeal.length) html += noMeal.map(e => `<div class="item"><div class="main"><div class="title">${esc(e.desc)}</div></div><button class="icon-btn" data-fdel="${e.id}">✕</button></div>`).join("");
+  $("mealList").innerHTML = html || `<div class="empty">Nothing logged yet — search a food above, or eat something from your pantry.</div>`;
+  $("mealList").querySelectorAll("[data-fdel]").forEach(b => b.addEventListener("click", () => {
+    const gone = S.foodLog.find(x => x.id === b.dataset.fdel);
+    S.foodLog = S.foodLog.filter(x => x.id !== b.dataset.fdel); save(); renderFood(); renderToday();
+    showUndo("Removed " + gone.desc, () => { S.foodLog.push(gone); save(); renderFood(); renderToday(); });
+  }));
+
+  // ---- grocery + pantry ----
+  const gro = S.grocery;
+  const toBuy = gro.filter(i => !i.checked && !i.status);
+  const pantry = gro.filter(i => i.checked && !i.status);
   $("grocCount").textContent = toBuy.length ? `· ${toBuy.length} to buy` : "";
   $("grocList").innerHTML = toBuy.length ? toBuy.map(i => `
     <div class="item">
       <button class="check" data-gtoggle="${i.id}" title="Bought it">✓</button>
-      <div class="main"><div class="title">${esc(i.name)}</div></div>
+      <div class="main"><div class="title">${esc(i.name)}</div>${i.foodId != null ? `<div class="meta">${foodById(i.foodId).kcal} cal / ${esc(foodById(i.foodId).s)}</div>` : ""}</div>
       <button class="icon-btn" data-gdel="${i.id}">✕</button>
     </div>`).join("") : `<div class="empty">Grocery list is empty.</div>`;
 
-  $("pantryCount").textContent = pantry.length ? `· ${pantry.length} to use` : "";
-  $("pantryList").innerHTML = pantry.length ? pantry.map(i => `
-    <div class="item">
-      <div class="main"><div class="title">${esc(i.name)}</div><div class="meta">bought ${i.boughtDate ? fmtDate(i.boughtDate) : ""}</div></div>
+  $("pantryCount").textContent = pantry.length ? `· ${pantry.length} item${pantry.length === 1 ? "" : "s"}` : "";
+  $("pantryList").innerHTML = pantry.length ? pantry.map(i => {
+    const f = i.foodId != null ? foodById(i.foodId) : null;
+    return `<div class="item">
+      <div class="main"><div class="title">${esc(i.name)}</div>
+      <div class="meta">${f ? `${f.kcal} cal · ${f.p}p ${f.c}c ${f.f}f per ${esc(f.s)}` : "bought " + (i.boughtDate ? fmtDate(i.boughtDate) : "")}</div></div>
       <button class="mini-btn" data-geat="${i.id}">🍽 Ate it</button>
       <button class="mini-btn bad" data-gbad="${i.id}">🗑 Went bad</button>
-    </div>`).join("") : `<div class="empty">Nothing waiting in the kitchen.</div>`;
-
-  const week = [...eaten.map(i => ({ ...i, ok: true })), ...wasted.map(i => ({ ...i, ok: false }))]
-    .sort((a, b) => (b.statusDate || "").localeCompare(a.statusDate || ""));
-  $("fdWeekReview").innerHTML = week.length ? week.map(i => `
-    <div class="item">
-      <div class="main"><div class="title">${i.ok ? "✅" : "❌"} ${esc(i.name)}</div>
-      <div class="meta">${i.ok ? "eaten" : "went bad"} · ${fmtDate(i.statusDate)}</div></div>
-    </div>`).join("") : `<div class="empty">Finish items in the kitchen (ate it / went bad) and your week shows up here.</div>`;
+    </div>`;
+  }).join("") : `<div class="empty">Pantry's empty — check items off your grocery list once you buy them.</div>`;
 
   document.querySelectorAll("[data-gtoggle]").forEach(b => b.addEventListener("click", () => {
-    const it = g.find(x => x.id === b.dataset.gtoggle);
+    const it = gro.find(x => x.id === b.dataset.gtoggle);
     it.checked = true; it.boughtDate = todayIso();
-    save(); renderFood(); toast("Moved to the kitchen");
+    save(); renderFood(); toast("Moved to your pantry");
   }));
   document.querySelectorAll("[data-gdel]").forEach(b => b.addEventListener("click", () => {
-    const gone = g.find(x => x.id === b.dataset.gdel);
-    S.grocery = g.filter(x => x.id !== b.dataset.gdel); save(); renderFood();
+    const gone = gro.find(x => x.id === b.dataset.gdel);
+    S.grocery = gro.filter(x => x.id !== b.dataset.gdel); save(); renderFood();
     showUndo(`Removed "${gone.name}"`, () => { S.grocery.push(gone); save(); renderFood(); });
   }));
   document.querySelectorAll("[data-geat]").forEach(b => b.addEventListener("click", () => {
-    const it = g.find(x => x.id === b.dataset.geat);
+    const it = gro.find(x => x.id === b.dataset.geat);
+    const before = JSON.parse(JSON.stringify(it));
     it.status = "eaten"; it.statusDate = todayIso();
-    save(); renderFood(); toast("Nice — eaten, not wasted");
+    let logged = null;
+    if (it.foodId != null) {
+      const f = foodById(it.foodId);
+      logged = { id: uid(), date: todayIso(), meal: $("logMeal").value || "Snack", desc: f.n, qty: 1, foodId: f.i, kcal: f.kcal, p: f.p, c: f.c, f: f.f };
+      S.foodLog.push(logged);
+    }
+    save(); renderFood(); renderToday();
+    toast(logged ? `Ate it — ${logged.kcal} cal logged` : "Eaten — cleared from pantry");
+    showUndo("Undo eat", () => {
+      Object.assign(it, before);
+      if (logged) S.foodLog = S.foodLog.filter(x => x.id !== logged.id);
+      save(); renderFood(); renderToday();
+    });
   }));
   document.querySelectorAll("[data-gbad]").forEach(b => b.addEventListener("click", () => {
-    const it = g.find(x => x.id === b.dataset.gbad);
+    const it = gro.find(x => x.id === b.dataset.gbad);
     it.status = "wasted"; it.statusDate = todayIso();
     save(); renderFood(); toast("Logged — buy less of that next run");
   }));
 
-  const log = S.foodLog.slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 40);
-  $("foodList").innerHTML = log.length ? log.map(e => `
-    <div class="item">
-      <div class="main"><div class="title">${esc(e.desc)}</div>
-      <div class="meta">${e.meal} · ${fmtDate(e.date)}</div></div>
-      <button class="icon-btn" data-fdel="${e.id}">✕</button>
-    </div>`).join("") : `<div class="empty">Nothing logged yet.</div>`;
-  $("foodList").querySelectorAll("[data-fdel]").forEach(b => b.addEventListener("click", () => {
-    const gone = S.foodLog.find(x => x.id === b.dataset.fdel);
-    S.foodLog = S.foodLog.filter(x => x.id !== b.dataset.fdel); save(); renderFood();
-    showUndo("Meal log deleted", () => { S.foodLog.push(gone); save(); renderFood(); });
-  }));
+  // ---- week review ----
+  const sow = startOfWeek();
+  const finished = gro.filter(i => i.status && i.statusDate && fromIso(i.statusDate) >= sow);
+  const eaten = finished.filter(i => i.status === "eaten"), wasted = finished.filter(i => i.status === "wasted");
+  $("fdEaten").textContent = eaten.length;
+  $("fdWasted").textContent = wasted.length;
+  $("fdWastedHint").textContent = wasted.length ? "went bad — tighten the list" : "went bad";
+  $("fdRate").textContent = finished.length ? Math.round(100 * eaten.length / finished.length) + "%" : "—";
+  const days = [...Array(7)].map((_, n) => iso(daysAgo(n)));
+  const logged = days.map(d => dayTotals(d).kcal).filter(k => k > 0);
+  $("avgCal").textContent = logged.length ? r0(logged.reduce((a, b) => a + b, 0) / logged.length) : "—";
+  const week = [...eaten.map(i => ({ ...i, ok: true })), ...wasted.map(i => ({ ...i, ok: false }))]
+    .sort((a, b) => (b.statusDate || "").localeCompare(a.statusDate || ""));
+  $("fdWeekReview").innerHTML = week.length ? week.map(i => `
+    <div class="item"><div class="main"><div class="title">${i.ok ? "✅" : "❌"} ${esc(i.name)}</div>
+    <div class="meta">${i.ok ? "eaten" : "went bad"} · ${fmtDate(i.statusDate)}</div></div></div>`).join("")
+    : `<div class="empty">Finish items in your pantry and the week builds itself here.</div>`;
 }
+
+/* ---- food event handlers ---- */
+$("foodSearch").addEventListener("input", () => { searchIdx = -1; renderFoodSearch(); });
+$("foodSearch").addEventListener("keydown", e => {
+  const res = searchFoods($("foodSearch").value, 8);
+  if (e.key === "ArrowDown") { e.preventDefault(); searchIdx = Math.min(searchIdx + 1, res.length - 1); renderFoodSearch(); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); searchIdx = Math.max(searchIdx - 1, 0); renderFoodSearch(); }
+  else if (e.key === "Enter" && res.length) { e.preventDefault(); choosePick(res[Math.max(0, searchIdx)].i); }
+  else if (e.key === "Escape") { $("foodResults").hidden = true; }
+});
+document.addEventListener("click", e => {
+  if (!e.target.closest("#foodSearch") && !e.target.closest("#foodResults")) { const b = $("foodResults"); if (b) b.hidden = true; }
+});
+$("pickQty").addEventListener("input", updatePickMacros);
+$("pickCancel").addEventListener("click", () => { pickedFood = null; $("foodPick").hidden = true; });
+$("pickAdd").addEventListener("click", () => {
+  if (!pickedFood) return;
+  const q = Number($("pickQty").value) || 1;
+  logFood({ desc: pickedFood.n, qty: q, foodId: pickedFood.i, kcal: pickedFood.kcal * q, p: pickedFood.p * q, c: pickedFood.c * q, f: pickedFood.f * q });
+  toast(`Logged ${r0(pickedFood.kcal * q)} cal`);
+  pickedFood = null; $("foodPick").hidden = true;
+});
+$("cfAddFood").addEventListener("click", () => {
+  const n = $("cfName").value.trim(); if (!n) { toast("Name the food"); return; }
+  logFood({ desc: n, qty: 1, kcal: Number($("cfKcal").value) || 0, p: Number($("cfP").value) || 0, c: Number($("cfC").value) || 0, f: Number($("cfF").value) || 0 });
+  ["cfName", "cfKcal", "cfP", "cfC", "cfF"].forEach(id => $(id).value = "");
+  toast("Logged");
+});
+$("saveGoals").addEventListener("click", () => {
+  S.nutrition = { kcal: Number($("gKcal").value) || 2200, p: Number($("gP").value) || 180, c: Number($("gC").value) || 220, f: Number($("gF").value) || 70 };
+  save(); renderFood(); toast("Targets saved");
+});
+$("foodDate").addEventListener("change", renderFood);
 $("grocAdd").addEventListener("click", () => {
   const name = $("grocInput").value.trim(); if (!name) return;
-  S.grocery.push({ id: uid(), name, checked: false, status: null });
+  const m = matchFood(name);
+  S.grocery.push({ id: uid(), name, checked: false, status: null, foodId: m ? m.i : null });
   save(); $("grocInput").value = ""; renderFood();
+  if (m) toast(`Added — matched "${m.n}" for macros`);
 });
 $("grocInput").addEventListener("keydown", e => { if (e.key === "Enter") $("grocAdd").click(); });
-$("foodDesc").addEventListener("keydown", e => { if (e.key === "Enter") $("foodAdd").click(); });
-$("foodAdd").addEventListener("click", () => {
-  const desc = $("foodDesc").value.trim(); if (!desc) { toast("What did you eat?"); return; }
-  S.foodLog.push({ id: uid(), date: $("foodDate").value || todayIso(), meal: $("foodMeal").value, desc });
-  save(); $("foodDesc").value = ""; toast("Logged"); renderFood();
-});
 
 /* ============================================================
    ACTIVITY
@@ -2129,7 +2979,14 @@ function renderBrief() {
   } else parts.push(`No tasks due — add some or enjoy it.`);
   if (st) parts.push(`🔥 <b>${st}-day streak</b> on the line.`);
   parts.push(`🏋️ <b>${wWork}</b> workout${wWork === 1 ? "" : "s"} banked this week${wWork >= 4 ? " — goal hit" : ""}.`);
-  if (kitchen.length) parts.push(`🥦 <b>${kitchen.length} item${kitchen.length > 1 ? "s" : ""}</b> in the kitchen to use: ${kitchen.slice(0, 3).map(i => esc(i.name)).join(", ")}${kitchen.length > 3 ? "…" : ""}.`);
+  if (kitchen.length) parts.push(`🥦 <b>${kitchen.length} item${kitchen.length > 1 ? "s" : ""}</b> in the pantry to use: ${kitchen.slice(0, 3).map(i => esc(i.name)).join(", ")}${kitchen.length > 3 ? "…" : ""}.`);
+  const ng = nutriGoals(), nt = dayTotals(today);
+  if (nt.kcal > 0) parts.push(`🍽️ <b>${r0(nt.kcal)}</b> of ${ng.kcal} cal · <b>${r0(nt.p)}g</b> protein${nt.p >= ng.p ? " ✓" : ` (${r0(ng.p - nt.p)}g to go)`}.`);
+  const nextGoals = (S.goals || []).filter(g => !g.done && daysUntil(g.date) >= 0).sort((a, b) => a.date.localeCompare(b.date));
+  if (nextGoals.length) {
+    const g0 = nextGoals[0], d0 = daysUntil(g0.date);
+    parts.push(`🎯 <b>${d0 === 0 ? "Today" : d0 + " day" + (d0 === 1 ? "" : "s")}</b>${d0 === 0 ? " is the deadline" : " left"} on “${esc(g0.title)}”.`);
+  }
   if (gEmails && gEmails.length) { const un = gEmails.filter(m => m.unread).length; parts.push(`📬 <b>${gEmails.length} email${gEmails.length > 1 ? "s" : ""}</b> in the last day${un ? ` (${un} unread)` : ""}.`); }
   $("briefText").innerHTML = `${greet}, James. ` + parts.join(" ");
 
@@ -2275,6 +3132,107 @@ $("dayPlanBtn").addEventListener("click", () => {
   $("dayPlanOut").innerHTML = `<b>Mapped it:</b> ${named.join(" · ")}${newEvents.length ? ` &nbsp;·&nbsp; <b>Added:</b> ${newEvents.map(e => esc(e.title) + " " + fmtClock(e.time)).join(" · ")}` : ""}${named.length + newEvents.length === 0 ? "Couldn't match anything — try naming tasks or giving times." : ""}`;
   toast("Day mapped from your description 🪄");
 });
+
+/* ============================================================
+   GOALS — deadlines with live countdowns
+   ============================================================ */
+function daysUntil(dateIso) {
+  const target = fromIso(dateIso); target.setHours(23, 59, 59, 999);
+  const now = new Date();
+  return Math.ceil((target - now) / 86400000);
+}
+function countdownParts(dateIso) {
+  const d = daysUntil(dateIso);
+  if (d < 0) return { n: Math.abs(d), unit: Math.abs(d) === 1 ? "day ago" : "days ago", cls: "past" };
+  if (d === 0) return { n: "Today", unit: "", cls: "soon" };
+  if (d === 1) return { n: 1, unit: "day left", cls: "soon" };
+  if (d <= 7) return { n: d, unit: "days left", cls: "soon" };
+  if (d <= 30) return { n: d, unit: "days left", cls: "warn" };
+  const weeks = Math.round(d / 7);
+  if (d <= 120) return { n: d, unit: `days left · ~${weeks} weeks`, cls: "" };
+  return { n: d, unit: `days left · ~${Math.round(d / 30)} months`, cls: "" };
+}
+function refreshGoalAreaSelect() {
+  const sel = $("glArea"); if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = `<option value="general">General</option>` +
+    Object.entries(AREAS).filter(([k]) => k !== "general").map(([k, a]) => `<option value="${k}">${a.label}</option>`).join("") +
+    (S.areas || []).map(a => `<option value="ca:${a.id}">${esc(a.icon + " " + a.name)}</option>`).join("");
+  if ([...sel.options].some(o => o.value === cur)) sel.value = cur;
+}
+function renderGoals() {
+  refreshGoalAreaSelect();
+  const open = (S.goals || []).filter(g => !g.done).sort((a, b) => a.date.localeCompare(b.date));
+  const done = (S.goals || []).filter(g => g.done).sort((a, b) => (b.doneDate || "").localeCompare(a.doneDate || ""));
+
+  $("glList").innerHTML = open.length ? open.map(g => {
+    const cd = countdownParts(g.date);
+    const pct = g.target ? Math.min(100, Math.round(100 * (g.progress || 0) / g.target)) : null;
+    const area = getArea(g.area);
+    return `<div class="goal-card ${cd.cls}">
+      <div class="goal-top">
+        <div style="flex:1;min-width:150px">
+          <div class="goal-title">${esc(g.title)}</div>
+          <div class="goal-meta">
+            <span class="tag" style="margin-right:6px"><span class="dot" style="background:${area.color}"></span>${esc(area.label)}</span>
+            by ${fmtDateY(g.date)}
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div class="countdown">${cd.n}<small>${cd.unit}</small></div>
+        </div>
+      </div>
+      ${g.target ? `<div style="margin-top:10px">
+        <div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-2);margin-bottom:4px">
+          <span><b>${esc(g.unit || "")}${(g.progress || 0).toLocaleString()}</b> of ${esc(g.unit || "")}${g.target.toLocaleString()}</span><span>${pct}%</span></div>
+        <div class="pbar"><div style="width:${pct}%;background:${pct >= 100 ? "var(--good)" : "var(--accent)"}"></div></div>
+      </div>` : ""}
+      ${g.why ? `<div class="goal-why">“${esc(g.why)}”</div>` : ""}
+      <div class="goal-actions">
+        ${g.target ? `<input type="number" data-glprog="${g.id}" placeholder="Update progress" style="width:150px" step="any">
+          <button class="mini-btn" data-glsave="${g.id}">Update</button>` : ""}
+        <button class="mini-btn" data-gldone="${g.id}">✓ Achieved</button>
+        <button class="icon-btn" data-gldel="${g.id}" style="margin-left:auto">✕</button>
+      </div>
+    </div>`;
+  }).join("") : `<div class="card"><div class="empty">No goals yet. Try: "Make $1,000/month from side hustles" by Dec 31 — you'll see the days ticking down.</div></div>`;
+
+  $("glDoneWrap").hidden = !done.length;
+  $("glDoneCount").textContent = done.length ? "· " + done.length : "";
+  $("glDone").innerHTML = done.map(g => `
+    <div class="item"><div class="main"><div class="title">🏆 ${esc(g.title)}</div>
+    <div class="meta">hit ${g.doneDate ? fmtDateY(g.doneDate) : ""} · target was ${fmtDateY(g.date)}</div></div>
+    <button class="icon-btn" data-gldel="${g.id}">✕</button></div>`).join("");
+
+  document.querySelectorAll("[data-glsave]").forEach(b => b.addEventListener("click", () => {
+    const g = S.goals.find(x => x.id === b.dataset.glsave);
+    const el = document.querySelector(`[data-glprog="${g.id}"]`);
+    const v = Number(el.value); if (isNaN(v) || el.value === "") { toast("Enter a number"); return; }
+    g.progress = v; save(); renderGoals(); renderToday();
+    toast(g.target && v >= g.target ? "Target hit — mark it achieved 🎯" : "Progress updated");
+  }));
+  document.querySelectorAll("[data-gldone]").forEach(b => b.addEventListener("click", () => {
+    const g = S.goals.find(x => x.id === b.dataset.gldone);
+    g.done = true; g.doneDate = todayIso(); save(); renderGoals(); renderToday(); toast("🏆 Goal achieved");
+  }));
+  document.querySelectorAll("[data-gldel]").forEach(b => b.addEventListener("click", () => {
+    const gone = S.goals.find(x => x.id === b.dataset.gldel);
+    S.goals = S.goals.filter(x => x.id !== b.dataset.gldel); save(); renderGoals(); renderToday();
+    showUndo(`Deleted "${gone.title}"`, () => { S.goals.push(gone); save(); renderGoals(); renderToday(); });
+  }));
+}
+$("glAdd").addEventListener("click", () => {
+  const title = $("glTitle").value.trim();
+  const date = $("glDate").value;
+  if (!title) { toast("Name the goal"); return; }
+  if (!date) { toast("Pick a deadline — that's the whole point"); return; }
+  S.goals.push({ id: uid(), title, date, area: $("glArea").value, target: Number($("glTarget").value) || null,
+    unit: $("glUnit").value.trim(), why: $("glWhy").value.trim(), progress: 0, done: false, created: todayIso() });
+  save();
+  ["glTitle", "glTarget", "glUnit", "glWhy"].forEach(id => $(id).value = "");
+  renderGoals(); renderToday(); toast("Goal set — countdown started ⏳");
+});
+$("glTitle").addEventListener("keydown", e => { if (e.key === "Enter") $("glAdd").click(); });
 
 /* ============================================================
    WEEK REVIEW
@@ -2513,11 +3471,13 @@ $("importFile").addEventListener("change", e => {
    INIT
    ============================================================ */
 function renderAll() {
-  renderToday(); renderTasks(); renderFood(); renderActivity(); renderFaith(); renderHustles(); renderCustom(); renderPlanner(); renderReview();
+  renderToday(); renderTasks(); renderFood(); renderActivity(); renderFaith(); renderHustles(); renderCustom(); renderPlanner(); renderReview(); renderGoals();
 }
 (function init() {
   if (!store.persistent) $("storageNotice").style.display = "block";
   ["taskDate","foodDate","actDate","faithDate","huDate","plDate"].forEach(id => { $(id).value = todayIso(); });
+  if (!S.goals) S.goals = [];
+  if (!S.nutrition) S.nutrition = { kcal: 2200, p: 180, c: 220, f: 70 };
   // migrate legacy v2 custom trackers → areas
   if (S.trackers && S.trackers.length) {
     S.trackers.forEach(t => {
